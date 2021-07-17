@@ -539,6 +539,75 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
     return result;
   }
 
+  ///Determines if the given file extension is valid for the audio codec.
+  ///This was introduced to mitigate issues with users trying to record to MP3
+  bool isValidFileExtension(Codec codec, String? extension) {
+    if (extension != null) {
+      var _validExtensions;
+      switch (codec) {
+        case Codec.aacADTS:
+          _validExtensions = ['.aac', '.adt', '.adts'];
+          break;
+        case Codec.aacMP4:
+          _validExtensions = ['.aac', '.mp4'];
+          break;
+        case Codec.amrNB:
+        case Codec.amrWB:
+          _validExtensions = ['.amr', '.3ga'];
+          break;
+        case Codec.defaultCodec:
+          //assume the correct extension was used
+          return true;
+        case Codec.flac:
+          _validExtensions = '.flac';
+          break;
+        case Codec.mp3:
+          _validExtensions = '.mp3';
+          break;
+        case Codec.opusCAF:
+          _validExtensions = '.caf';
+          break;
+        case Codec.opusOGG:
+          _validExtensions = '.ogg';
+          break;
+        case Codec.opusWebM:
+          _validExtensions = '.webm';
+          break;
+        case Codec.pcm16:
+          _validExtensions = ['.aiff', '.caf', '.wav'];
+          break;
+        case Codec.pcm16AIFF:
+          _validExtensions = '.aiff';
+          break;
+        case Codec.pcm16CAF:
+          _validExtensions = '.caf';
+          break;
+        case Codec.pcm16WAV:
+          _validExtensions = '.wav';
+          break;
+        case Codec.pcm8:
+        case Codec.pcmFloat32:
+          _validExtensions = ['.aiff', '.caf', '.wav'];
+          break;
+        case Codec.pcmWebM:
+          _validExtensions = '.webm';
+          break;
+        case Codec.vorbisOGG:
+          _validExtensions = '.ogg';
+          break;
+        case Codec.vorbisWebM:
+          _validExtensions = '.webm';
+          break;
+      }
+      if (_validExtensions.runtimeType == List) {
+        if (_validExtensions.contains(extension)) return true;
+      } else if (_validExtensions.runtimeType == String) {
+        if (_validExtensions == extension) return true;
+      }
+    }
+    return false;
+  }
+
   void _setRecorderCallback() {
     _recorderController ??= StreamController.broadcast();
   }
@@ -653,6 +722,12 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
     if (_recorderState != RecorderState.isStopped) {
       throw _RecorderRunningException('Recorder is not stopped.');
     }
+
+    assert(
+      toFile == null || isValidFileExtension(codec, _fileExtension(toFile)),
+      "File extension '${_fileExtension(toFile)}' is incorrect for the audio codec '$codec'",
+    );
+
     if (!await (isEncoderSupported(codec))) {
       throw _CodecNotSupportedException('Codec not supported.');
     }
